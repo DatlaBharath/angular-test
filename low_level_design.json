@@ -1,0 +1,340 @@
+{
+    "sections": [
+        {
+            "id": "introduction",
+            "title": "1. Introduction",
+            "subsections": [
+                {
+                    "title": "1.1 Purpose",
+                    "paragraph": "The Low-Level Design (LLD) document describes the technical implementation of the Fee Management module in Angular. It directly and faithfully implements three sets of user stories: CSV fee export, visualizing fees by category, and AI-driven customer risk/reward insights. The document lays out the detailed structure, interfaces, and error handling strategies for these functionalities.",
+                    "list_items": []
+                },
+                {
+                    "title": "1.2 Scope",
+                    "paragraph": "This LLD covers the frontend implementation (Angular) of exporting fees to CSV, viewing fees by category, and AI-based customer risk/reward recommendations. It details modules, data structures, UI components, API contracts, error handling, and security for these requirements. Out-of-scope: non-fee related pages, backend logic, and unrelated features.",
+                    "list_items": [
+                        "In-scope: Fee Management page and related Angular modules/components.",
+                        "In-scope: Fee export to CSV functionality for admin users.",
+                        "In-scope: Fee categorization and visualization for branch managers.",
+                        "In-scope: AI bot integration and recommendations for customer risk and loyalty.",
+                        "Out-of-scope: Backend services not described in user stories.",
+                        "Out-of-scope: Features unrelated to fee management or AI insights."
+                    ]
+                },
+                {
+                    "title": "1.3 Target Audience",
+                    "paragraph": "This document is for Angular developers, architects, testers, and stakeholders who require a detailed, technical blueprint for implementing fee management and customer insights as outlined in user requirements.",
+                    "list_items": [
+                        "Frontend Angular Developers.",
+                        "QA/Testers validating against business requirements.",
+                        "Technical Architects.",
+                        "Stakeholders sponsoring the project."
+                    ]
+                },
+                {
+                    "title": "1.4 Guiding Principles",
+                    "paragraph": "The LLD strictly adheres to requirements in the user stories, emphasizing direct mapping, clarity, maintainability, performance, and robust error handling. UI responsiveness and accessibility are ensured across devices.",
+                    "list_items": [
+                        "Direct mapping of user stories to technical components.",
+                        "Simplicity and maintainability in module structure.",
+                        "Consistent and accessible UI across device types.",
+                        "Comprehensive error handling and user feedback.",
+                        "Adherence to application documentation standards for terminology and formatting."
+                    ]
+                }
+            ]
+        },
+        {
+            "id": "system-overview",
+            "title": "2. System Overview",
+            "subsections": [
+                {
+                    "title": "2.1 System Context",
+                    "paragraph": "The Fee Management module interacts with admin and branch users via a browser-based Angular application. It communicates with backend APIs to fetch fee and customer data, and may request AI insights from an external service or integrated backend. The interface is responsive for both desktop and mobile devices.",
+                    "image_src": "C4Context\ntitle \"Fee Insights & Management Portal Context Diagram\"\n\nPerson(adminUser, \"Admin User\", \"Exports fee data and accesses fee management functionalities\")\nPerson(branchManager, \"Branch Manager\", \"Views categorized fee details and verifies reporting accuracy\")\nPerson(user, \"Branch/Admin User\", \"Accesses AI-powered customer insights for risk identification and reward recommendations\")\n\nSystem(feePortal, \"Fee Insights & Management Portal\", \"Angular-based frontend system for fee management and customer insights\")\nSystem_Ext(aiService, \"AI Insights Service\", \"External service providing customer risk and loyalty insights\")\nSystem_Ext(database, \"Fee Database\", \"Stores fee data categorized by ACH, Visa, and Other Fees\")\n\nRel(adminUser, feePortal, \"Uses for fee export and management\")\nRel(branchManager, feePortal, \"Uses for viewing categorized fee details\")\nRel(user, feePortal, \"Uses for accessing AI insights\")\nRel(feePortal, aiService, \"Fetches customer risk and loyalty insights\")\nRel(feePortal, database, \"Fetches categorized fee data\")",
+                    "image_alt": "Generated C4 System Context Diagram"
+                },
+                {
+                    "title": "2.2 Technology Stack",
+                    "paragraph": "The module is designed for Angular (latest stable version), with dependencies for CSV export, responsive UI, and AI data integration. Testing uses Jasmine/Karma. Security follows Angular best practices.",
+                    "list_items": [
+                        "Angular (v15+): Main SPA framework.",
+                        "TypeScript: Strongly typed language for Angular development.",
+                        "Angular Material: UI components for consistency and responsiveness.",
+                        "ngx-csv, Papaparse: Library for CSV export.",
+                        "RxJS: Reactive programming for API and data flows.",
+                        "Jasmine/Karma: Unit and integration testing.",
+                        "AI Insights API: Endpoint for customer risk/loyalty insight retrieval.",
+                        "RESTful APIs: Backend communication for fee and customer data."
+                    ]
+                }
+            ]
+        },
+        {
+            "id": "detailed-design",
+            "title": "3. Detailed Design",
+            "subsections": [
+                {
+                    "title": "3.1 Module Descriptions",
+                    "paragraph": "The application is structured into cohesive Angular modules/components with clearly defined responsibilities: Fee Management, CSV Export, Fee Category Visualization, AI Insights, Utility, and Error Handling.",
+                    "list_items": [
+                        "FeeManagementModule: Contains the FeeManagementPageComponent responsible for displaying fee data to admin/branch users with category grouping and export controls.",
+                        "FeeManagementPageComponent: Renders fee categories, details, and the 'Export to CSV' button. Handles data fetching, error states, and responsiveness.",
+                        "FeeExportService: Service that formats fee data and utilizes CSV export library. Handles export request, error catch, and formatting for columns 'Category', 'Amount', 'Timestamp'.",
+                        "FeeCategoryComponent: Displays grouped fee categories (ACH Fees, Visa Fees, Other Fees) and their details; ensures labels match documentation.",
+                        "AIInsightsBotService: Service responsible for retrieving and processing repayment behavior and loyalty score. Flags high-risk and recommends rewards based on loyalty criteria.",
+                        "CustomerProfileComponent: Renders customer profile with AI insights panel showing actionable recommendations, flags/messaging for edge cases (insufficient data).",
+                        "ErrorNotificationComponent: Shows contextual error messages (e.g., 'Export failed. Please try again later.', 'Fee data is currently unavailable. Please try again later.').",
+                        "UtilityService: Shared formatting, date/time conversion, and helpers for ensuring standard compliance."
+                    ]
+                },
+                {
+                    "title": "3.2 Class Diagrams",
+                    "paragraph": "The class diagram outlines the structure and relationships for Angular services, components, and data models supporting direct implementation of the requirements.",
+                    "image_src": "classDiagram\n    class FeeManagementModule {\n        +FeeManagementPageComponent feeManagementPage\n    }\n    class FeeManagementPageComponent {\n        +FeeExportService feeExportService\n        +FeeCategoryComponent feeCategoryComponent\n        +AIInsightsBotService aiInsightsBotService\n        +ErrorNotificationComponent errorNotificationComponent\n    }\n    class FeeExportService {\n        +exportToCSV(): bool\n    }\n    class FeeCategoryComponent {\n        +displayCategories(): void\n    }\n    class AIInsightsBotService {\n        +generateInsights(customerId: string): AIInsight\n    }\n    class ErrorNotificationComponent {\n        +showError(message: string): void\n    }\n    class UtilityService {\n        +formatDate(date: string): string\n        +convertToCSV(data: Fee[]): string\n    }\n    class Fee {\n        +String category\n        +float amount\n        +String timestamp\n    }\n    class FeeCategory {\n        +String name\n        +Fee[] fees\n    }\n    class Customer {\n        +String id\n        +String name\n        +Repayment[] repaymentHistory\n        +int loyaltyScore\n    }\n    class Repayment {\n        +String dueDate\n        +String paymentDate\n        +String status\n    }\n    class AIInsight {\n        +bool highRisk\n        +String recommendationMessage\n        +bool insufficientData\n    }\n    FeeManagementModule \"1\" *-- \"1\" FeeManagementPageComponent\n    FeeManagementPageComponent \"1\" *-- \"1\" FeeExportService\n    FeeManagementPageComponent \"1\" *-- \"1\" FeeCategoryComponent\n    FeeManagementPageComponent \"1\" *-- \"1\" AIInsightsBotService\n    FeeManagementPageComponent \"1\" *-- \"1\" ErrorNotificationComponent\n    FeeExportService \"1\" ..> Fee\n    FeeCategoryComponent \"1\" ..> FeeCategory\n    AIInsightsBotService \"1\" ..> Customer\n    AIInsightsBotService \"1\" ..> AIInsight\n    Customer \"1\" *-- \"*\" Repayment",
+                    "image_alt": "Generated Class Diagram"
+                },
+                {
+                    "title": "3.3 Sequence Diagrams",
+                    "paragraph": "The sequence diagram shows workflow: user interaction with the Fee Management page triggers data retrieval, category display, CSV export, and AI insights. It covers normal and error paths.",
+                    "image_src": "sequenceDiagram\nparticipant Admin as \"Admin User\"\nparticipant Branch as \"Branch Manager\"\nparticipant FM as \"Fee Management Page\"\nparticipant API as \"Backend API\"\nparticipant AI as \"AI Insights API\"\n\n%% Admin User exports fee data\nAdmin->>FM: Access Fee Management Page\nFM->>API: Fetch fee data\nAPI-->>FM: Return fee data\nAdmin->>FM: Click 'Export to CSV'\nFM->>API: Request CSV export\nAPI-->>FM: Return CSV file\nFM-->>Admin: Download CSV file\n\n%% Branch Manager views categorized fee details\nBranch->>FM: Access Fee Management Page\nFM->>API: Fetch categorized fee data\nAPI-->>FM: Return categorized fee data\nBranch-->>FM: View categorized fee details\n\n%% AI bot provides insights\nBranch->>FM: Open customer profile\nFM->>AI: Request AI insights for customer\nAI-->>FM: Return insights (e.g., high-risk flag, recommendations)\nFM-->>Branch: Display AI insights\n\nalt Data unavailable\n    FM-->>Admin: Display 'Export failed. Please try again later.'\n    FM-->>Branch: Display 'Fee data is currently unavailable. Please try again later.'\n    FM-->>Branch: Display 'Insufficient data to generate insights.'\nend",
+                    "image_alt": "Generated Sequence Diagram"
+                }
+            ]
+        },
+        {
+            "id": "data-design",
+            "title": "4. Data Design",
+            "subsections": [
+                {
+                    "title": "4.1 Data Structures",
+                    "paragraph": "Frontend TypeScript models mirror backend data contracts. Fee, Customer, and Insight models ensure correct mapping and standards compliance.",
+                    "list_items": [
+                        "Fee interface: { category: string; amount: number; timestamp: string; } - Used in display and CSV export. Example: {category:'ACH Fees', amount:200.00, timestamp:'2024-06-01T11:30:00Z'}",
+                        "FeeCategory interface: { name: string; fees: Fee[]; } - For grouping fees as per 'ACH Fees', 'Visa Fees', 'Other Fees'. Example: {name:'Visa Fees',fees:[Fee,...]}",
+                        "Customer interface: { id: string; name: string; repaymentHistory: Repayment[]; loyaltyScore?: number; } - May be missing loyaltyScore/repaymentHistory for edge cases.",
+                        "Repayment interface: { dueDate: string; paymentDate: string; status: 'on-time'|'late'; } - Used for risk analysis.",
+                        "AIInsight interface: { highRisk: boolean; recommendationMessage: string; insufficientData: boolean; } - Used in AI insights panel."
+                    ]
+                },
+                {
+                    "title": "4.2 Database Design",
+                    "paragraph": "While primary storage is handled by backend, frontend expects structured responses for fees, customers, and AI insight data. Mock or local storage may be used for offline export or UI demo purposes.",
+                    "list_items": [
+                        "Fees Table: Columns - id (string), category (string), amount (decimal), timestamp (ISO string). Frontend expects full data coverage for export.",
+                        "FeeCategories Table: id (string), name (string), fee_ids (array of string). Used for grouping fees.",
+                        "Customers Table: id (string), name (string), loyalty_score (integer), repayment_history (array of Repayment objects). AI bot uses this for risk/reward analysis.",
+                        "Insights Table: customer_id (string), high_risk (boolean), recommendation (string), insufficient_data (boolean). Used for customer profile panel."
+                    ],
+                    "image_src": "/placeholder-database-design-diagram.png",
+                    "image_alt": "Database Design Diagram"
+                }
+            ]
+        },
+        {
+            "id": "interface-design",
+            "title": "5. Interface Design",
+            "subsections": [
+                {
+                    "title": "5.1 User Interface",
+                    "paragraph": "UI is designed for clarity and responsiveness. Critical controls include the 'Export to CSV' button, fee category cards, tables for fee details, AI insights panels, and error notification banners. All UI elements are accessible and functional on desktop and mobile.",
+                    "list_items": [
+                        "'Export to CSV' button: Displayed on Fee Management page for admin users. Prominent, enabled when data is loaded, disabled during export.",
+                        "Fee Category Cards: Distinct cards or sections labeled 'ACH Fees', 'Visa Fees', 'Other Fees' displaying latest fee details.",
+                        "Fee Details Table/Grid: Columns - 'Category', 'Amount', 'Timestamp'. Styled according to application documentation.",
+                        "AI Insights Panel: Shown on customer profile; lists high-risk flags and loyalty-based recommendations.",
+                        "Error Notification Banners: Display contextual error messages for export and data retrieval failures.",
+                        "Responsive Design: Flex layout, Angular Material, and mobile breakpoints. Export completes within 5s, Fee Management page loads within 3s on mobile.",
+                        "Accessibility: ARIA labels, keyboard navigation, screen reader compatible."
+                    ],
+                    "image_src": "/placeholder-user-interface-diagram.png",
+                    "image_alt": "User Interface Diagram"
+                },
+                {
+                    "title": "5.2 External Interfaces (API Contracts)",
+                    "paragraph": "All API contracts directly correspond to frontend requirements. Requests use secure endpoints, error codes, and well-defined schemas for fee, customer, and insight retrieval.",
+                    "list_items": [
+                        "GET /api/fees: Returns [{category: string, amount: number, timestamp: string}]. Example response: [{category:'ACH Fees',amount:200,timestamp:'2024-06-01T11:30:00Z'},...]",
+                        "GET /api/fees/categories: Returns [{name: string, fees: Fee[]}]. Used to group/display fee categories. Example: [{name:'Visa Fees',fees:[Fee,...]},...]",
+                        "POST /api/fees/export: Takes no body, returns CSV binary data. On error: HTTP 500 with 'Export failed. Please try again later.'",
+                        "GET /api/customers/:id: Returns complete customer object with id, name, loyaltyScore, repaymentHistory. On error: HTTP 404 with 'Fee data is currently unavailable. Please try again later.'",
+                        "GET /api/ai-insights/:customerId: Returns { highRisk: boolean, recommendationMessage: string, insufficientData: boolean }. Used in AI insights panel. On incomplete data: 'Insufficient data to generate insights' indicator.",
+                        "Authentication: All APIs require session token (JWT) in the headers. Authorization enforced by backend."
+                    ]
+                }
+            ]
+        },
+        {
+            "id": "security-design",
+            "title": "6. Security Design",
+            "subsections": [
+                {
+                    "title": "6.1 Security Measures",
+                    "paragraph": "Security is enforced via Angular best practices, secure API requests, robust error handling, and session management.",
+                    "list_items": [
+                        "All API requests sent over HTTPS.",
+                        "CSRF protection via Angular and backend tokens.",
+                        "Input sanitization and validation for all forms and user entries."
+                    ]
+                },
+                {
+                    "title": "6.2 Authentication and Authorization",
+                    "paragraph": "Frontend relies on session tokens (JWT) passed in API calls. Role-based UI controls restrict access.",
+                    "list_items": [
+                        "JWT storage in HttpOnly cookies or session storage.",
+                        "'Export to CSV' button visible only for Admin users (role check in FeeManagementPageComponent).",
+                        "Fee category views restricted to branch managers and admins.",
+                        "AI insights feature visible to branch/admin users."
+                    ]
+                },
+                {
+                    "title": "6.3 Data Protection",
+                    "paragraph": "Sensitive customer and fee data handled only over secure channels; no persistent storage on client unless for offline CSV export. Exported data formatted as per documentation standards.",
+                    "list_items": [
+                        "No fee/customer data cached beyond session scope unless required for export.",
+                        "CSV files generated and stored locally for admin user only, never uploaded elsewhere.",
+                        "Customer profile data never displayed unless authorized and properly fetched."
+                    ]
+                }
+            ]
+        },
+        {
+            "id": "error-handling",
+            "title": "7. Error Handling & Logging",
+            "subsections": [
+                {
+                    "title": "7.1 Error Handling",
+                    "paragraph": "Errors are handled at the component/service level. User-facing messages meet acceptance criteria. Robust fallback and display logic for incomplete data.",
+                    "list_items": [
+                        "Fee export failure: CSV export catches errors and emits 'Export failed. Please try again later.'",
+                        "Fee data unavailable: FeeManagementPageComponent shows 'Fee data is currently unavailable. Please try again later.'",
+                        "AI insights missing data: AIInsightsBotService and CustomerProfileComponent display 'Insufficient data to generate insights'.",
+                        "Network/API errors: Generic error notification with retry option.",
+                        "Validation errors: Input checks and user messages as per documentation standards."
+                    ]
+                },
+                {
+                    "title": "7.2 Logging",
+                    "paragraph": "Client-side logging via console for development, Angular logging service for production diagnostics. Errors and API failures logged for troubleshooting.",
+                    "list_items": [
+                        "Log all HTTP errors using Angular's logging service.",
+                        "Export actions (success/fail) logged for audit.",
+                        "AI insight generation time tracked for performance compliance.",
+                        "Sensitive errors masked in user UI but logged with technical detail."
+                    ]
+                }
+            ]
+        },
+        {
+            "id": "performance",
+            "title": "8. Performance",
+            "subsections": [
+                {
+                    "title": "8.1 Performance Optimization",
+                    "paragraph": "Performance tuning ensures export and insights feature meet user story metrics. Angular change detection and asynchronous loading minimize UI lag.",
+                    "list_items": [
+                        "Fees table and categories loaded asynchronously with loading spinners.",
+                        "CSV export uses web worker or async operation to avoid UI blocking.",
+                        "AI insights processed with optimized logic for <2 seconds latency 95% of the time.",
+                        "Angular Material and flex layout for fast rendering on mobile/desktop."
+                    ]
+                },
+                {
+                    "title": "8.2 Load Handling",
+                    "paragraph": "Load handled via API pagination, lazy loading, and client-side caching of small sets. Export and AI requests throttled to prevent abuse.",
+                    "list_items": [
+                        "Fee data API supports pagination for large datasets.",
+                        "Export operation limited to manageable dataset size (<10k rows).",
+                        "AI requests debounced if user navigates rapidly between customers."
+                    ]
+                },
+                {
+                    "title": "8.3 Scalability",
+                    "paragraph": "Frontend scales via modular Angular architecture, supporting additional fee categories and customer attributes with minimal refactoring.",
+                    "list_items": [
+                        "FeeCategoryComponent is extensible for new categories.",
+                        "AIInsightsBotService supports integration with future AI endpoints.",
+                        "UI design accommodates additional fields and actions."
+                    ]
+                }
+            ]
+        },
+        {
+            "id": "testing",
+            "title": "9. Testing & Validation",
+            "subsections": [
+                {
+                    "title": "9.1 Unit Testing",
+                    "paragraph": "All components, services, and utility functions have unit tests (Jasmine/Karma) ensuring correctness, error handling, and edge case coverage.",
+                    "list_items": [
+                        "FeeExportService: Export logic tested for full fee data coverage, correct CSV formatting, and error handling.",
+                        "FeeManagementPageComponent: Tests for UI correctness, data grouping, error displays.",
+                        "AIInsightsBotService: Tests for high-risk flag, loyalty recommendations, insufficient data scenario.",
+                        "ErrorNotificationComponent: Tests for correct error message rendering."
+                    ]
+                },
+                {
+                    "title": "9.2 Integration Testing",
+                    "paragraph": "Integration tests cover interaction between services, data flow, and UI updates.",
+                    "list_items": [
+                        "CSV export button triggers export and displays error/success notifications.",
+                        "Fee data retrieval flows from API to category/component display.",
+                        "Customer profile loads AI insights and handles incomplete data."
+                    ]
+                },
+                {
+                    "title": "9.3 Performance Testing",
+                    "paragraph": "Performance tests validate metrics: <5s CSV export on mobile, <3s Fee Management page load, <2s AI insights generation (95%).",
+                    "list_items": [
+                        "Simulate large fee datasets and test export duration.",
+                        "Test Fee Management page load across device emulators.",
+                        "Measure AI insight latency with incomplete and complete data."
+                    ]
+                },
+                {
+                    "title": "9.4 Security Testing",
+                    "paragraph": "Security tests for access controls, token handling, and sensitive data display.",
+                    "list_items": [
+                        "Verify 'Export to CSV' visible only to admin users.",
+                        "Session token presence required for API calls.",
+                        "Check for unauthorized access to customer profile/AI insights."
+                    ]
+                }
+            ]
+        },
+        {
+            "id": "deployment",
+            "title": "10. Deployment",
+            "subsections": [
+                {
+                    "title": "10.1 Deployment Architecture",
+                    "paragraph": "Angular frontend deploys as static files to cloud-hosted environment (e.g., AWS S3 + CloudFront, Azure Blob + CDN, or on-premise web servers). Integrates with backend fee and AI APIs.",
+                    "image_src": "/placeholder-error.png",
+                    "image_alt": "Generated Deployment Architecture Diagram"
+                },
+                {
+                    "title": "10.2 Deployment Process",
+                    "paragraph": "Code shipped via CI/CD pipelines, with automated build, lint, test, and deployment steps. Manual regression QA before production cutover.",
+                    "list_items": [
+                        "Commit triggers build pipeline (Jenkins/GitHub Actions/Azure DevOps) for lint/test/build.",
+                        "Generate production Angular bundle (ng build --prod).",
+                        "Deploy static files to cloud (S3, Blob) or web hosting.",
+                        "Configure CDN for static file delivery and caching.",
+                        "Smoke and regression tests on deployed environment.",
+                        "Rollback/restore process in case of deployment failure."
+                    ]
+                },
+                {
+                    "title": "10.3 Monitoring and Alerting",
+                    "paragraph": "Monitor site availability, performance, and client-side errors. Automated alerts on failures or performance degradation.",
+                    "list_items": [
+                        "Site uptime checked via external service (Pingdom, UptimeRobot).",
+                        "Performance metrics (load time, CSV export, AI insights latency) sent to monitoring dashboard.",
+                        "Client-side JavaScript errors reported via logging tool (Sentry, LogRocket).",
+                        "Alerts triggered for error message spikes or export failures."
+                    ]
+                }
+            ]
+        }
+    ]
+}

@@ -1,0 +1,68 @@
+/*
+  SCSS for Customer Profile page
+  - Responsive layout for insights panel and customer info section
+  - Mobile and desktop support
+*/
+
+:host {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+  width: 100%;
+  margin: 0 auto;
+}
+
+.profile-container {
+  display: flex;
+  flex-direction: row;
+  gap: 2rem;
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+
+  @media (max-width: 900px) {
+    flex-direction: column;
+    gap: 1.5rem;
+  }
+}
+
+.customer-info {
+  flex: 2 1 0;
+  background: #fff;
+  padding: 2rem 1.5rem;
+  border-radius: 12px;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+  min-width: 0;
+
+  @media (max-width: 900px) {
+    padding: 1.25rem 1rem;
+  }
+}
+
+.insights-panel {
+  flex: 1 1 280px;
+  background: #fafafe;
+  padding: 1.5rem 1rem;
+  border-radius: 12px;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.04);
+  min-width: 220px;
+  margin-left: 2rem;
+
+  @media (max-width: 900px) {
+    margin-left: 0;
+    margin-top: 1rem;
+    min-width: 0;
+    padding: 1rem 0.5rem;
+  }
+}
+
+@media (max-width: 600px) {
+  .profile-container {
+    padding: 0 0.25rem;
+  }
+  .customer-info, .insights-panel {
+    border-radius: 8px;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.03);
+    padding: 0.75rem 0.25rem;
+  }
+}
