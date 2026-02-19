@@ -9,14 +9,16 @@ RUN npm ci
 COPY . .
 RUN npm run build -- --configuration production
 
+# Show what was built so we can see the exact path
+RUN find /app/dist -type d
+
 # Stage 2: Serve with Nginx
 FROM nginx:alpine
 
 RUN rm -rf /usr/share/nginx/html/*
 
-COPY --from=build /app/dist/angular-test/browser /usr/share/nginx/html
+COPY --from=build /app/dist/ /usr/share/nginx/html/
 
-# Write nginx config inline - no external file needed
 RUN echo 'server { \
     listen 80; \
     server_name localhost; \
